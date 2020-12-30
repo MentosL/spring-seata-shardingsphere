@@ -1,0 +1,85 @@
+spring:
+   # 配置sharding jdbc分片规则
+   shardingsphere:
+      datasource:
+         # 连接名称（下面要用这个名称来区分库）
+         names: ds0,ds1
+         ds0:
+            type: com.alibaba.druid.pool.DruidDataSource
+            driver-class-name: com.mysql.jdbc.Driver
+            url: jdbc:mysql://localhost:3306/product0?useUnicode=true&characterEncoding=utf8&allowMultiQueries=true
+            username: root
+            password: 123456
+            initialSize: 5      #初始化大小
+            maxActive: 200       #最大值
+            maxWait: 2000      #最大等待时间，配置获取连接等待超时，时间单位都是毫秒ms
+            timeBetweenEvictionRunsMillis: 60000    #配置间隔多久才进行一次检测，检测需要关闭的空闲连接
+         ds1:
+            type: com.alibaba.druid.pool.DruidDataSource
+            driver-class-name: com.mysql.jdbc.Driver
+            url: jdbc:mysql://localhost:3306/product1?useUnicode=true&characterEncoding=utf8&allowMultiQueries=true
+            username: root
+            password: 123456
+            initialSize: 5      #初始化大小
+            maxActive: 200       #最大值
+            maxWait: 2000      #最大等待时间，配置获取连接等待超时，时间单位都是毫秒ms
+            timeBetweenEvictionRunsMillis: 60000    #配置间隔多久才进行一次检测，检测需要关闭的空闲连接
+      # 配置分片规则
+      sharding:
+         # 按表来区分
+         tables:
+            product:
+               # 配置数据节点
+               actualDataNodes: ds${0..1}.product${0..1}
+               # 分库策略
+               databaseStrategy:
+                  inline:
+                     # 分库的规则 用id这个字段来分库 总共有两个库 及ds0（product0）与ds1（product1）
+                     shardingColumn: id
+                     algorithmExpression: ds${id % 2}
+               # 分表策略
+               tableStrategy:
+                  inline:
+                     shardingColumn: id
+                     algorithmExpression: product${id % 2}
+         bindingTables:
+            product
+         broadcastTables:
+            t_config
+         defaultDataSourceName: ds0
+      props:
+         sql.show: true
+mybatis-plus:
+   mapper-locations: classpath:/mapper/*Mapper.xml
+   typeAliasesPackage: xyz.montos.b.entity
+   global-config:
+      db-config:
+         field-strategy: not-empty
+         id-type: auto
+         db-type: mysql
+   configuration:
+      map-underscore-to-camel-case: true
+      cache-enabled: true
+      auto-mapping-unknown-column-behavior: none
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+seata:
+   enabled: true
+   application-id: b-service
+   tx-service-group: my_test_tx_group
+   config:
+      type: nacos
+      nacos:
+         namespace:
+         serverAddr: 127.0.0.1:8848
+         group: SEATA_GROUP
+         username: "nacos"
+         password: "nacos"
+   registry:
+      type: nacos
+      nacos:
+         application: seata-server
+         server-addr: 127.0.0.1:8848
+         group: SEATA_GROUP
+         namespace:
+         username: "nacos"
+         password: "nacos"
